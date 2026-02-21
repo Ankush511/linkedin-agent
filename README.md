@@ -51,7 +51,7 @@ Add the following as **Repository Secrets** in GitHub (`Settings > Secrets and v
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/linkedin-agent.git](https://github.com/yourusername/linkedin-agent.git)
+   git clone [https://github.com/Ankush511/linkedin-agent.git](https://github.com/Ankush511/linkedin-agent.git)
    cd linkedin-agent
 
 ```
