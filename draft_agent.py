@@ -9,7 +9,7 @@ from botocore.exceptions import ClientError
 
 # --- CONFIG ---
 HISTORY_FILE = "topic_history.json"
-MODEL_ID = "anthropic.claude-sonnet-4-5-20250929-v1:0"
+MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 AWS_REGION = "us-east-1" 
 
 # --- AWS SETUP ---
