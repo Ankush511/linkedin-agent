@@ -7,12 +7,10 @@ from github import Github
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-# --- CONFIG ---
 HISTORY_FILE = "topic_history.json"
 MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 AWS_REGION = "us-east-1" 
 
-# --- AWS SETUP ---
 bedrock = boto3.client(
     service_name='bedrock-runtime',
     region_name=AWS_REGION,
@@ -50,12 +48,11 @@ def get_unique_topic(history):
     Your task is to suggest a single, highly specific technical topic for a LinkedIn post.
 
     Focus Areas (Choose ONE randomly to keep content fresh): 
-    - Backend Engineering & System Design (e.g., Database Sharding trade-offs, Event-driven architectures, Caching strategies)
-    - Generative AI & Cloud (e.g., RAG optimization, Building AI Agents with AWS Bedrock, LLM context limits)
-    - Data Structures, Algorithms & Python (e.g., Advanced DP patterns, Optimizing Python code for scale, LeetCode patterns for real-world use)
+    - Backend Engineering & System Design (e.g., Database Sharding trade-offs, Event-driven architectures, Caching strategies, Clean Architecture etc.)
+    - Generative AI & Cloud (e.g., RAG optimization, Building AI Agents with AWS Bedrock, LLM context limits, MCP Servers, etc)
 
     Strict Constraints:
-    1. The topic MUST be niche, actionable, and tailored for mid-to-senior software engineers.
+    1. The topic MUST be niche, actionable, and tailored for early-to-senior software engineers.
     2. NO generic advice like "How to learn Python" or "Why AI is the future".
     3. DO NOT use any of these past topics: {past_topics}
 
@@ -66,23 +63,26 @@ def get_unique_topic(history):
 
 def generate_draft(topic):
     prompt = f"""
-    You are a Senior Staff Engineer writing a LinkedIn post about: "{topic}".
-    Your target audience consists of Junior, Mid-level, and Senior Software Engineers who want deep, practical insights.
+    Write a LinkedIn post about: "{topic}".
+    
+    Persona: You are an approachable, insightful software engineer sharing a "lightbulb" moment. You are explaining this to a mix of junior engineers, students, and peers. Make it fun, relatable, and easy to digest without feeling overwhelming.
+    
+    CRITICAL "Anti-Robot" Rules:
+    1. NO HYPHENS OR ASTERISKS FOR LISTS (- or *). Do not use standard markdown formatting. If you need a list, use simple numbers (1., 2.) or just use line breaks.
+    2. NO AI BUZZWORDS. Strictly ban: delve, tapestry, realm, navigate, supercharge, crucial, landscape, unlock, foster, beacon.
+    3. Emojis: Use a MAXIMUM of 5 emojis in the entire post. Use them strategically.
+    4. Write like a human. Use short, punchy sentences. Conversational tone.
+    5. Formatting: Use plenty of line breaks (whitespace) so it is highly scannable and easy to read.
 
-    Write the post following this exact structure:
-    1. The Hook: Start with a contrarian statement, a common developer misconception, or a real-world production failure related to the topic. (Max 2 lines).
-    2. The "Aha!" Moment: Explain the core technical concept or trade-off clearly. "Show, don't tell."
-    3. The Blueprint: Provide 3-4 actionable bullet points, a mini-framework, or a specific architectural rule of thumb.
-    4. The Closer: End with a specific, open-ended technical question to drive comments.
+    Structure:
+    1. The Hook: Start with a relatable struggle, a funny myth-bust, or a direct technical observation. 
+    2. The "Aha!" Moment & Example: Explain the core concept simply. YOU CAN include a brief, easy-to-understand real-world example to make the concept click for a junior dev.
+    3. The Takeaway: Give them one practical rule of thumb to remember.
+    4. The Closer: Ask a casual question to spark comments (e.g., "How do you usually handle this?").
+    5. Hashtags: Place exactly 3 to 5 highly relevant hashtags at the very bottom.
+    6. Length: Keep it under 1000 characters. 
 
-    Tone & Formatting Constraints:
-    - Tone: Confident, insightful, conversational, and strictly fluff-free. 
-    - Banned Words: DO NOT use generic AI buzzwords (e.g., "delve", "tapestry", "in today's fast-paced world", "supercharge").
-    - Formatting: Use clear line breaks for scannability. Use a maximum of 3 relevant emojis in the entire post.
-    - Length: Keep it under 1200 characters. 
-    - Hashtags: Place exactly 4 relevant hashtags at the very bottom. DO NOT use hashtags inline.
-
-    Output the LinkedIn post text directly with no introductory or concluding remarks.
+    Output the raw text only. No introductory or concluding remarks. Just the post content.
     """
     return invoke_claude(prompt)
 
