@@ -1,0 +1,36 @@
+name: 2. Publish on Label
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+  contents: write # Needed to save history.json
+
+jobs:
+  publish:
+    if: github.event.label.name == 'publish'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - run: pip install boto3 PyGithub requests
+
+      - name: Run Publisher
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_USER_URN: ${{ secrets.LINKEDIN_USER_URN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: python publish_agent.py
+        
+      - name: Save History
+        run: |
+          git config --global user.name "LinkedInBot"
+          git config --global user.email "bot@github.com"
+          git add topic_history.json
+          git commit -m "Update history [skip ci]" || exit 0
+          git push
