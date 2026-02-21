@@ -46,29 +46,43 @@ def load_history():
 def get_unique_topic(history):
     past_topics = [h['topic'] for h in history]
     prompt = f"""
-    Act as a Developer Advocate. Suggest a specialized topic for a LinkedIn post.
-    Focus: Backend Engineering, System Design, or Generative AI.
-    
-    Constraints:
-    1. NO generic advice (e.g. "Keep learning").
-    2. MUST be technical (e.g. "Database Sharding vs Partitioning").
-    3. DO NOT use these past topics: {past_topics}
-    
-    Output ONLY the topic title.
+    You are an Expert Developer Advocate and Senior Staff Engineer. 
+    Your task is to suggest a single, highly specific technical topic for a LinkedIn post.
+
+    Focus Areas (Choose ONE randomly to keep content fresh): 
+    - Backend Engineering & System Design (e.g., Database Sharding trade-offs, Event-driven architectures, Caching strategies)
+    - Generative AI & Cloud (e.g., RAG optimization, Building AI Agents with AWS Bedrock, LLM context limits)
+    - Data Structures, Algorithms & Python (e.g., Advanced DP patterns, Optimizing Python code for scale, LeetCode patterns for real-world use)
+
+    Strict Constraints:
+    1. The topic MUST be niche, actionable, and tailored for mid-to-senior software engineers.
+    2. NO generic advice like "How to learn Python" or "Why AI is the future".
+    3. DO NOT use any of these past topics: {past_topics}
+
+    Output Requirement:
+    Return ONLY the topic title. Do not include quotes, preambles, or explanations.
     """
     return invoke_claude(prompt).strip()
 
 def generate_draft(topic):
     prompt = f"""
-    Write a LinkedIn post about: "{topic}".
-    Target Audience: Senior Software Engineers.
-    
-    Structure:
-    - Hook: A technical challenge or common mistake.
-    - Insight: The "How-To" or solution.
-    - Engagement: A question for the comments.
-    
-    Format: Use bullet points and emojis. Length: < 1200 chars.
+    You are a Senior Staff Engineer writing a LinkedIn post about: "{topic}".
+    Your target audience consists of Junior, Mid-level, and Senior Software Engineers who want deep, practical insights.
+
+    Write the post following this exact structure:
+    1. The Hook: Start with a contrarian statement, a common developer misconception, or a real-world production failure related to the topic. (Max 2 lines).
+    2. The "Aha!" Moment: Explain the core technical concept or trade-off clearly. "Show, don't tell."
+    3. The Blueprint: Provide 3-4 actionable bullet points, a mini-framework, or a specific architectural rule of thumb.
+    4. The Closer: End with a specific, open-ended technical question to drive comments.
+
+    Tone & Formatting Constraints:
+    - Tone: Confident, insightful, conversational, and strictly fluff-free. 
+    - Banned Words: DO NOT use generic AI buzzwords (e.g., "delve", "tapestry", "in today's fast-paced world", "supercharge").
+    - Formatting: Use clear line breaks for scannability. Use a maximum of 3 relevant emojis in the entire post.
+    - Length: Keep it under 1200 characters. 
+    - Hashtags: Place exactly 4 relevant hashtags at the very bottom. DO NOT use hashtags inline.
+
+    Output the LinkedIn post text directly with no introductory or concluding remarks.
     """
     return invoke_claude(prompt)
 

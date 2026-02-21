@@ -44,23 +44,27 @@ def update_history_file(topic):
         json.dump(history, f, indent=2)
 
 if __name__ == "__main__":
-    # 1. New Auth Method (Fixes the Deprecation Warning)
     auth = Auth.Token(os.environ["GITHUB_TOKEN"])
     g = Github(auth=auth)
     
     repo = g.get_repo(os.environ["GITHUB_REPOSITORY"])
     issue = repo.get_issue(int(os.environ["ISSUE_NUMBER"]))
     
-    raw = issue.body
+    raw = issue.body or ""
     topic = issue.title.replace("Draft: ", "")
     
-    # 2. Smarter Parsing Logic
     try:
-        if "" in raw:
-            content = raw.split("")[1].split("")[0].strip()
-        else:
-            # Fallback: Just grab everything before the '---' line
-            content = raw.split("---")[0].replace(f"### 🤖 Draft: {topic}", "").strip()
+        lines = raw.splitlines()
+        content_lines = []
+        
+        for line in lines:
+            if "🤖 Draft:" in line or "START CONTENT" in line or "END CONTENT" in line:
+                continue
+            if line.startswith("---"):
+                break
+            content_lines.append(line)
+            
+        content = "\n".join(content_lines).strip()
             
         if not content:
             raise ValueError("Parsed content is empty!")
