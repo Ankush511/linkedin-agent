@@ -4,6 +4,7 @@ import json
 import base64
 import boto3
 import pandas as pd
+import time
 
 st.set_page_config(page_title="LinkedIn Command Center", page_icon="🚀", layout="wide")
 
@@ -19,11 +20,14 @@ HEADERS = {
     "Accept": "application/vnd.github.v3+json"
 }
 
+ISSUES_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues?labels=draft&state=open"
+HISTORY_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/topic_history.json"
+
 st.title("🚀 LinkedIn Agent Command Center")
 
 tab1, tab2, tab3 = st.tabs(["✍️ Generate Post", "📊 Dashboard", "🧠 Brainstormer"])
 
-# TAB 1: GENERATION CONTROLS
+# TAB 1: GENERATION CONTROLS (WITH SMART POLLING)
 with tab1:
     st.markdown("### Force the Agent to write a specific post")
     st.markdown("Leave blank to let the agent auto-brainstorm based on your history.")
@@ -31,7 +35,11 @@ with tab1:
     topic_input = st.text_input("Custom Topic:", placeholder="e.g., Sliding Window Pattern in Python")
 
     if st.button("🚀 Generate Draft Now", type="primary"):
-        with st.spinner("Waking up GitHub Actions..."):
+        
+        current_issues_resp = requests.get(ISSUES_URL, headers=HEADERS)
+        current_issue_ids = [issue['id'] for issue in current_issues_resp.json()] if current_issues_resp.status_code == 200 else []
+        
+        with st.spinner("Waking up GitHub Actions & generating draft (takes ~60 seconds)..."):
             url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/workflows/daily_draft.yml/dispatches"
             payload = {
                 "ref": "main",
@@ -40,17 +48,34 @@ with tab1:
             resp = requests.post(url, headers=HEADERS, json=payload)
             
             if resp.status_code == 204:
-                st.success("✅ Workflow triggered! Your draft will be ready in the Dashboard in ~60 seconds.")
+                max_retries = 18
+                found_new = False
+                
+                for _ in range(max_retries):
+                    time.sleep(5)
+                    check_resp = requests.get(ISSUES_URL, headers=HEADERS)
+                    
+                    if check_resp.status_code == 200:
+                        new_issue_ids = [issue['id'] for issue in check_resp.json()]
+                        if any(i_id not in current_issue_ids for i_id in new_issue_ids):
+                            found_new = True
+                            break
+                            
+                if found_new:
+                    st.success("✅ Draft successfully generated! Refreshing dashboard...")
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.warning("⏳ The workflow is running, but taking a bit longer than expected. Please check the Dashboard tab in a minute.")
             else:
                 st.error(f"❌ Failed to trigger workflow. Status: {resp.status_code}")
                 st.write(resp.text)
 
-# TAB 2: THE DASHBOARD (NOW WITH DISCARD)
+# TAB 2: THE DASHBOARD
 with tab2:
     st.markdown("### 📋 Awaiting Your Approval")
     
-    issues_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues?labels=draft&state=open"
-    issues_resp = requests.get(issues_url, headers=HEADERS)
+    issues_resp = requests.get(ISSUES_URL, headers=HEADERS)
     
     if issues_resp.status_code == 200:
         issues = issues_resp.json()
@@ -70,66 +95,79 @@ with tab2:
                 
                 col1, col2, col3 = st.columns([1, 1, 1])
                 
-                # Button 1: Save Edits to GitHub Issue
                 with col1:
                     if st.button("💾 Save Edits", key=f"save_{issue_num}"):
                         patch_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}"
-                        payload = {"body": updated_body}
-                        patch_resp = requests.patch(patch_url, headers=HEADERS, json=payload)
-                        
-                        if patch_resp.status_code == 200:
-                            st.success("✅ Edits saved to GitHub!")
-                        else:
-                            st.error("❌ Failed to save edits.")
+                        requests.patch(patch_url, headers=HEADERS, json={"body": updated_body})
+                        st.success("✅ Edits saved to GitHub!")
                 
-                # Button 2: Publish to LinkedIn
                 with col2:
                     if st.button("🚀 Publish to LinkedIn", key=f"pub_{issue_num}", type="primary"):
                         patch_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}"
                         requests.patch(patch_url, headers=HEADERS, json={"body": updated_body})
                         
                         label_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}/labels"
-                        label_payload = {"labels": ["publish"]}
-                        label_resp = requests.post(label_url, headers=HEADERS, json=label_payload)
+                        label_resp = requests.post(label_url, headers=HEADERS, json={"labels": ["publish"]})
                         
                         if label_resp.status_code == 200:
                             st.success("🚀 Publishing sequence initiated! GitHub Actions is posting it now.")
                             st.balloons()
+                            time.sleep(2)
                             st.rerun()
                         else:
                             st.error(f"❌ Failed to initiate publish. {label_resp.text}")
                             
-                # Button 3: Discard the Draft completely
                 with col3:
                     if st.button("🗑️ Discard Draft", key=f"discard_{issue_num}"):
                         patch_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}"
-                        payload = {"state": "closed"}
-                        patch_resp = requests.patch(patch_url, headers=HEADERS, json=payload)
-                        
-                        if patch_resp.status_code == 200:
-                            st.success("🗑️ Draft successfully discarded!")
-                            st.rerun()
-                        else:
-                            st.error(f"❌ Failed to discard draft. {patch_resp.text}")
+                        requests.patch(patch_url, headers=HEADERS, json={"state": "closed"})
+                        st.success("🗑️ Draft successfully discarded!")
+                        time.sleep(1)
+                        st.rerun()
     else:
         st.error("Could not fetch drafts from GitHub.")
     
     st.markdown("---")
     st.markdown("### 📚 Content Archive")
     
-    history_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/topic_history.json"
-    hist_resp = requests.get(history_url, headers=HEADERS)
+    hist_resp = requests.get(HISTORY_URL, headers=HEADERS)
     
     if hist_resp.status_code == 200:
-        content_b64 = hist_resp.json()['content']
+        file_data = hist_resp.json()
+        content_b64 = file_data['content']
+        file_sha = file_data['sha']
+        
         decoded_content = base64.b64decode(content_b64).decode('utf-8')
         history_data = json.loads(decoded_content)
         
         df = pd.DataFrame(history_data)
         if not df.empty:
+            df['date'] = pd.to_datetime(df['date'])
             df = df.sort_values(by="date", ascending=False).reset_index(drop=True)
+            
             st.metric("Total Posts Published", len(df))
-            st.dataframe(df, use_container_width=True)
+            
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "date": st.column_config.DateColumn("Published Date", format="MMM DD, YYYY", width="medium"),
+                    "topic": st.column_config.TextColumn("Post Topic", width="large")
+                }
+            )
+            
+            st.markdown("---")
+            st.markdown("#### Danger Zone")
+            if st.button("🗑️ Delete History File", type="primary", help="Permanently deletes topic_history.json"):
+                with st.spinner("Deleting file from GitHub..."):
+                    delete_resp = requests.delete(HISTORY_URL, headers=HEADERS, json={"message": "Deleted topic_history.json via Streamlit UI", "sha": file_sha})
+                    if delete_resp.status_code == 200:
+                        st.success("✅ History file deleted! The bot's memory is wiped.")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Failed to delete file: {delete_resp.text}")
     else:
         st.info("No history file found yet. It will appear here after your first published post.")
 
