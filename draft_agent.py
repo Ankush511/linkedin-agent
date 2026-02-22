@@ -65,6 +65,9 @@ def generate_draft(topic):
     prompt = f"""
     Write a LinkedIn post about: "{topic}".
     
+    CRITICAL "Grounded Reality" Rule: 
+    DO NOT invent fake startup metrics, massive cloud bills (e.g., "$800 API costs"), or fake user bases. Do not pretend to be a founder. Frame your "struggles" around standard developer realities: debugging a tricky issue, optimizing a local script, reading documentation, or a standard team architecture discussion. Keep the stakes realistic.
+    
     Persona: You are an approachable, insightful software engineer sharing a "lightbulb" moment. You are explaining this to a mix of junior engineers, students, and peers. Make it fun, relatable, and easy to digest without feeling overwhelming.
     
     CRITICAL "Anti-Robot" Rules:
