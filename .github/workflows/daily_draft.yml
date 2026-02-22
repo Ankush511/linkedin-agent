@@ -1,8 +1,13 @@
 name: 1. Create Draft
 on:
   schedule:
-    - cron: '0 4 * * *' # 4 AM UTC (9:30 AM IST)
+    - cron: '0 4 * * *' # Normal daily auto-run at 9:30 AM IST
   workflow_dispatch:
+    inputs:
+      custom_topic:
+        description: 'Optional: Force a specific topic for today'
+        required: false
+        default: ''
 
 permissions:
   issues: write
@@ -15,7 +20,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       - run: pip install boto3 PyGithub requests
       
       - name: Run Drafter
@@ -26,4 +31,5 @@ jobs:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TOPIC: ${{ github.event.inputs.custom_topic }} 
         run: python draft_agent.py

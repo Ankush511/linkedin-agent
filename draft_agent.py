@@ -118,10 +118,18 @@ def send_email(issue_url, topic):
         server.send_message(msg)
 
 if __name__ == "__main__":
-    print("🧠 Brainstorming...")
-    history = load_history()
-    topic = get_unique_topic(history)
-    print(f"💡 Topic: {topic}")
+    print("🚀 Starting Agent...")
+    
+    custom_topic = os.environ.get("CUSTOM_TOPIC", "").strip()
+    
+    if custom_topic:
+        print(f"🎯 Custom topic detected: {custom_topic}")
+        topic = custom_topic
+    else:
+        print("🧠 No custom topic. Brainstorming automatically...")
+        history = load_history()
+        topic = get_unique_topic(history)
+        print(f"💡 Auto-Topic: {topic}")
     
     content = generate_draft(topic)
     
