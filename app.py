@@ -7,6 +7,7 @@ import pandas as pd
 
 st.set_page_config(page_title="LinkedIn Command Center", page_icon="🚀", layout="wide")
 
+# --- CONFIG & SECRETS ---
 GITHUB_PAT = st.secrets["GITHUB_PAT"]
 REPO_OWNER = st.secrets["REPO_OWNER"]
 REPO_NAME = st.secrets["REPO_NAME"]
@@ -56,9 +57,47 @@ with tab2:
         if not issues:
             st.info("🎉 No drafts waiting for approval! You're all caught up.")
         for issue in issues:
+            issue_num = issue['number']
             with st.expander(f"📝 Draft: {issue['title']}", expanded=True):
-                st.markdown(f"**[🔗 Click here to edit and publish on GitHub]({issue['html_url']})**")
-                st.text_area("Content Preview:", issue['body'], height=250, disabled=True)
+                
+                # Editable Text Area
+                updated_body = st.text_area(
+                    "Edit your post below:", 
+                    value=issue['body'], 
+                    height=250, 
+                    key=f"text_{issue_num}"
+                )
+                
+                col1, col2 = st.columns([1, 1])
+                
+                # Button 1: Save Edits to GitHub Issue
+                with col1:
+                    if st.button("💾 Save Edits", key=f"save_{issue_num}"):
+                        patch_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}"
+                        payload = {"body": updated_body}
+                        patch_resp = requests.patch(patch_url, headers=HEADERS, json=payload)
+                        
+                        if patch_resp.status_code == 200:
+                            st.success("✅ Edits saved to GitHub!")
+                        else:
+                            st.error("❌ Failed to save edits.")
+                
+                # Button 2: Publish to LinkedIn
+                with col2:
+                    if st.button("🚀 Publish to LinkedIn", key=f"pub_{issue_num}", type="primary"):
+                        patch_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}"
+                        requests.patch(patch_url, headers=HEADERS, json={"body": updated_body})
+                        
+                        label_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}/labels"
+                        label_payload = {"labels": ["publish"]}
+                        label_resp = requests.post(label_url, headers=HEADERS, json=label_payload)
+                        
+                        if label_resp.status_code == 200:
+                            st.success("🚀 Publishing sequence initiated! GitHub Actions is posting it now.")
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed to initiate publish. {label_resp.text}")
     else:
         st.error("Could not fetch drafts from GitHub.")
     
