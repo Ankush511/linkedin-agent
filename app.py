@@ -45,7 +45,7 @@ with tab1:
                 st.error(f"❌ Failed to trigger workflow. Status: {resp.status_code}")
                 st.write(resp.text)
 
-# TAB 2: THE DASHBOARD
+# TAB 2: THE DASHBOARD (NOW WITH DISCARD)
 with tab2:
     st.markdown("### 📋 Awaiting Your Approval")
     
@@ -68,7 +68,7 @@ with tab2:
                     key=f"text_{issue_num}"
                 )
                 
-                col1, col2 = st.columns([1, 1])
+                col1, col2, col3 = st.columns([1, 1, 1])
                 
                 # Button 1: Save Edits to GitHub Issue
                 with col1:
@@ -98,6 +98,19 @@ with tab2:
                             st.rerun()
                         else:
                             st.error(f"❌ Failed to initiate publish. {label_resp.text}")
+                            
+                # Button 3: Discard the Draft completely
+                with col3:
+                    if st.button("🗑️ Discard Draft", key=f"discard_{issue_num}"):
+                        patch_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_num}"
+                        payload = {"state": "closed"}
+                        patch_resp = requests.patch(patch_url, headers=HEADERS, json=payload)
+                        
+                        if patch_resp.status_code == 200:
+                            st.success("🗑️ Draft successfully discarded!")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed to discard draft. {patch_resp.text}")
     else:
         st.error("Could not fetch drafts from GitHub.")
     
