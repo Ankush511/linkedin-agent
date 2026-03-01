@@ -18,10 +18,10 @@ bedrock = boto3.client(
     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
 )
 
-def invoke_claude(prompt):
+def invoke_claude(prompt, max_tokens=1500):
     payload = {
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 1500,
+        "max_tokens": max_tokens,
         "temperature": 0.7,
         "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
     }
@@ -33,9 +33,7 @@ def invoke_claude(prompt):
         print(f"AWS Error: {e}")
         raise
 
-# --- LOGIC ---
-def load_history():
-    # In GitHub Actions, we read the file from the repo
+def load_topic_history():
     if not os.path.exists(HISTORY_FILE):
         return []
     with open(HISTORY_FILE, "r") as f:
@@ -61,7 +59,7 @@ def get_unique_topic(history):
     """
     return invoke_claude(prompt).strip()
 
-def generate_draft(topic):
+def generate_linkedin_post(topic):
     prompt = f"""
     Write a LinkedIn post about: "{topic}".
     
@@ -87,26 +85,48 @@ def generate_draft(topic):
 
     Output the raw text only. No introductory or concluding remarks. Just the post content.
     """
-    return invoke_claude(prompt)
+    return invoke_claude(prompt, max_tokens=1500)
 
-def create_issue(topic, content):
+def generate_hashnode_article(topic, linkedin_summary):
+    prompt = f"""
+    You are a Senior Software Engineer writing a deep-dive technical blog post for Hashnode.
+    The topic is: "{topic}". 
+    The core summary of the post is based on this LinkedIn draft: "{linkedin_summary}"
+    
+    Your task is to write a comprehensive, highly structured Markdown article for new coders/developers transitioning to mid-level. 
+    
+    CRITICAL STRUCTURE REQUIREMENTS (Model this exact flow):
+    1. Catchy Title: Start with a single `# Title` line.
+    2. The Hook: Introduce the real-world problem (skip the fluff, start with a relatable engineering scenario).
+    3. The Single Most Important Mental Model: A clear conceptual breakdown.
+    4. Real-World Use Cases: Concrete examples of where this is used.
+    5. Code Examples: MUST include clear `java` code blocks and any required `bash` setup/run commands.
+    6. Edge Cases / What Happens When it Crashes?: Explain failure modes.
+    7. Where Senior Engineers Get This Wrong: List 3 common architectural mistakes or anti-patterns related to this topic.
+    8. Decision Framework: A simple "When to use X" summary.
+    
+    Tone: Authoritative, educational, but accessible. Explain the "Why", not just the "How".
+    
+    Output ONLY the Markdown content. Start directly with the `# Title`. Do not include any generic AI intros.
+    """
+    return invoke_claude(prompt, max_tokens=4000)
+
+def create_review_issue(topic, linkedin_content, hashnode_content):
     g = Github(os.environ["GITHUB_TOKEN"])
     repo = g.get_repo(os.environ["GITHUB_REPOSITORY"])
     
-    body = f"""
-### 🤖 Draft: {topic}
+    body = f"""🤖 Draft generated for topic: {topic}
 
-{content}
----
-**Actions:**
-1. Edit the text above if needed.
-2. Add the label **"publish"** to post this to LinkedIn.
-3. Close the issue to discard.
-    """
+---HASHNODE_ARTICLE---
+{hashnode_content}
+---LINKEDIN_POST---
+{linkedin_content}
+---END---
+"""
     issue = repo.create_issue(title=f"Draft: {topic}", body=body, labels=["draft"])
     return issue
 
-def send_email(issue_url, topic):
+def send_notification_email(issue_url, topic):
     sender = os.environ["EMAIL_USER"]
     password = os.environ["EMAIL_PASS"]
     receiver = os.environ["EMAIL_RECEIVER"]
@@ -122,19 +142,24 @@ def send_email(issue_url, topic):
 
 if __name__ == "__main__":
     print("🚀 Starting Agent...")
-    history = load_history()
+    history = load_topic_history()
     
     custom_topic = os.environ.get("CUSTOM_TOPIC", "").strip()
     
     if custom_topic:
-        print(f"🎯 UI Custom topic detected: {custom_topic}")
         topic = custom_topic
     else:
-        print("🧠 No custom topic. Brainstorming automatically...")
         topic = get_unique_topic(history)
-        print(f"💡 Auto-Topic: {topic}")
     
-    # Generate and notify
-    content = generate_draft(topic)
-    issue = create_issue(topic, content)
-    send_email(issue.html_url, topic)
+    print("✍️ Generating LinkedIn Draft...")
+    linkedin_content = generate_linkedin_post(topic)
+    
+    print("📝 Generating Hashnode Article...")
+    hashnode_content = generate_hashnode_article(topic, linkedin_content)
+    
+    print("📦 Creating GitHub Issue...")
+    issue = create_review_issue(topic, linkedin_content, hashnode_content)
+    
+    print("📧 Sending Notification...")
+    send_notification_email(issue.html_url, topic)
+    print("✅ Done!")
