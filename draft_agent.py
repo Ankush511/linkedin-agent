@@ -4,7 +4,6 @@ import boto3
 import smtplib
 from email.mime.text import MIMEText
 from github import Github
-from datetime import datetime
 from botocore.exceptions import ClientError
 
 HISTORY_FILE = "topic_history.json"
@@ -18,7 +17,7 @@ bedrock = boto3.client(
     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
 )
 
-def invoke_claude(prompt, max_tokens=1500):
+def invoke_claude(prompt, max_tokens=2000):
     payload = {
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": max_tokens,
@@ -85,31 +84,29 @@ def generate_linkedin_post(topic):
 
     Output the raw text only. No introductory or concluding remarks. Just the post content.
     """
-    return invoke_claude(prompt, max_tokens=1500)
+    return invoke_claude(prompt, max_tokens=2200)
 
 def generate_hashnode_article(topic, linkedin_summary):
     prompt = f"""
-    You are a Senior Software Engineer writing a deep-dive technical blog post for Hashnode.
+    You are a Senior Software Engineer writing a deep-dive technical blog post for Hashnode for Beginners/Freshers on this Software Engineering domain.
     The topic is: "{topic}". 
-    The core summary of the post is based on this LinkedIn draft: "{linkedin_summary}"
     
-    Your task is to write a comprehensive, highly structured Markdown article for new coders/developers transitioning to mid-level. 
+    CRITICAL CONTENT RULES (READ CAREFULLY):
+    1. PURE KNOWLEDGE TRANSFER: Do NOT use fake personal anecdotes, fake company scenarios, or phrases like "last week our service faced this" or "my team". Write this as a highly objective, educational deep dive.
+    2. FOCUS: Explain HOW the technology works, WHY we need it, and its PROS & CONS. (e.g., If the topic is Kafka + Idempotency, explain how they work together fundamentally).
+    3. CODE: Use shorter, highly meaningful code examples that get straight to the point without bloat.
+    4. COMPLETION: Ensure the article is fully completed with a proper conclusion. Do not cut off mid-thought.
     
-    CRITICAL STRUCTURE REQUIREMENTS (Model this exact flow):
+    STRUCTURE REQUIREMENTS:
     1. Catchy Title: Start with a single `# Title` line.
-    2. The Hook: Introduce the real-world problem (skip the fluff, start with a relatable engineering scenario).
-    3. The Single Most Important Mental Model: A clear conceptual breakdown.
-    4. Real-World Use Cases: Concrete examples of where this is used.
-    5. Code Examples: MUST include clear `java` code blocks and any required `bash` setup/run commands.
-    6. Edge Cases / What Happens When it Crashes?: Explain failure modes.
-    7. Where Senior Engineers Get This Wrong: List 3 common architectural mistakes or anti-patterns related to this topic.
-    8. Decision Framework: A simple "When to use X" summary.
+    2. The Core Problem: Objective explanation of what problem this tech solves.
+    3. The Mental Model: A clear conceptual breakdown.
+    4. Code Examples: Clear `java` blocks or `bash` commands.
+    5. Trade-offs / Pros & Cons.
     
-    Tone: Authoritative, educational, but accessible. Explain the "Why", not just the "How".
-    
-    Output ONLY the Markdown content. Start directly with the `# Title`. Do not include any generic AI intros.
+    Output ONLY the Markdown content. Start directly with the `# Title`.
     """
-    return invoke_claude(prompt, max_tokens=4000)
+    return invoke_claude(prompt, max_tokens=8000)
 
 def create_review_issue(topic, linkedin_content, hashnode_content):
     g = Github(os.environ["GITHUB_TOKEN"])
@@ -145,11 +142,7 @@ if __name__ == "__main__":
     history = load_topic_history()
     
     custom_topic = os.environ.get("CUSTOM_TOPIC", "").strip()
-    
-    if custom_topic:
-        topic = custom_topic
-    else:
-        topic = get_unique_topic(history)
+    topic = custom_topic if custom_topic else get_unique_topic(history)
     
     print("✍️ Generating LinkedIn Draft...")
     linkedin_content = generate_linkedin_post(topic)
@@ -159,7 +152,5 @@ if __name__ == "__main__":
     
     print("📦 Creating GitHub Issue...")
     issue = create_review_issue(topic, linkedin_content, hashnode_content)
-    
-    print("📧 Sending Notification...")
     send_notification_email(issue.html_url, topic)
     print("✅ Done!")
