@@ -7,51 +7,6 @@ from datetime import datetime
 
 HISTORY_FILE = "topic_history.json"
 
-def publish_to_hashnode(content):
-    print("📝 Publishing to Hashnode...")
-    headers = {
-        "Authorization": os.environ['HASHNODE_TOKEN'],
-        "Content-Type": "application/json"
-    }
-    
-    lines = content.strip().split('\n')
-    title = lines[0].replace("#", "").strip() if lines[0].startswith("#") else "Technical Deep Dive"
-    body_content = '\n'.join(lines[1:]).strip()
-    
-    query = """
-    mutation PublishPost($input: PublishPostInput!) {
-      publishPost(input: $input) {
-        post {
-          url
-        }
-      }
-    }
-    """
-    
-    variables = {
-        "input": {
-            "title": title,
-            "contentMarkdown": body_content,
-            "publicationId": os.environ['HASHNODE_PUBLICATION_ID']
-        }
-    }
-    
-    payload = {
-        "query": query,
-        "variables": variables
-    }
-    
-    response = requests.post("https://gql.hashnode.com/", headers=headers, json=payload)
-    
-    if response.status_code != 200:
-        raise Exception(f"Hashnode API HTTP Error: {response.text}")
-        
-    result = response.json()
-    if 'errors' in result:
-        raise Exception(f"Hashnode GraphQL Error: {json.dumps(result['errors'])}")
-        
-    return result['data']['publishPost']['post']['url']
-
 def post_to_linkedin(content):
     url = "https://api.linkedin.com/v2/ugcPosts"
     headers = {
@@ -99,25 +54,18 @@ if __name__ == "__main__":
     topic = issue.title.replace("Draft: ", "")
     
     try:
-        hn_content = raw.split("---HASHNODE_ARTICLE---")[1].split("---LINKEDIN_POST---")[0].strip()
         li_content = raw.split("---LINKEDIN_POST---")[1].split("---END---")[0].strip()
             
-        if not hn_content or not li_content:
-            raise ValueError("Parsed content is empty! Make sure the markers are intact.")
+        if not li_content:
+            raise ValueError("Parsed LinkedIn content is empty!")
             
-        issue.create_comment("🚀 Pushing article to Hashnode...")
-        hashnode_url = publish_to_hashnode(hn_content)
-        
-        promo_text = f"\n\n📖 To know more on this, check out my detailed blog: {hashnode_url}"
-        final_li_content = li_content + promo_text
-        
         print(f"🚀 Posting to LinkedIn: {topic}")
-        issue.create_comment("🚀 Pushing summary to LinkedIn...")
-        post_id = post_to_linkedin(final_li_content)
+        issue.create_comment("🚀 Pushing post to LinkedIn...")
+        post_id = post_to_linkedin(li_content)
         
         update_history_file(topic)
         
-        issue.create_comment(f"✅ Success!\nHashnode URL: {hashnode_url}\nLinkedIn ID: {post_id}")
+        issue.create_comment(f"✅ Published successfully!\nLinkedIn ID: {post_id}")
         issue.edit(state='closed')
         
     except Exception as e:
