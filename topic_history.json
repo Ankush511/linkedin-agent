@@ -26,5 +26,9 @@
   {
     "date": "2026-03-01",
     "topic": "Optimizing LLM Token Usage with Prompt Compression Techniques: Implementing LLMLingua for 10x Cost Reduction Without Accuracy Loss"
+  },
+  {
+    "date": "2026-03-02",
+    "topic": "Implementing Optimistic Locking with Version Vectors in Eventually Consistent Distributed Databases to Prevent Lost Updates"
   }
 ]
