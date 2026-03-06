@@ -42,5 +42,9 @@
   {
     "date": "2026-03-05",
     "topic": "Implementing Structured Output Parsing with JSON Schema Validation for LLM Responses: Handling Hallucinated Fields and Retry Strategies"
+  },
+  {
+    "date": "2026-03-06",
+    "topic": "Implementing Bulkhead Pattern with Separate Thread Pools per External Dependency to Prevent Cascading Failures in Microservices"
   }
 ]
