@@ -46,5 +46,9 @@
   {
     "date": "2026-03-06",
     "topic": "Implementing Bulkhead Pattern with Separate Thread Pools per External Dependency to Prevent Cascading Failures in Microservices"
+  },
+  {
+    "date": "2026-03-07",
+    "topic": "Implementing Consistent Hashing with Virtual Nodes for Cache Cluster Rebalancing: Minimizing Key Redistribution During Node Failures"
   }
 ]
