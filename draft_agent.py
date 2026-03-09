@@ -7,7 +7,7 @@ from github import Github
 from botocore.exceptions import ClientError
 
 HISTORY_FILE = "topic_history.json"
-MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+MODEL_ID = "us.anthropic.claude-opus-4-5-20251101-v1:0"
 AWS_REGION = "us-east-1" 
 
 bedrock = boto3.client(
