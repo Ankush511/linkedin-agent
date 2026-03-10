@@ -58,5 +58,9 @@
   {
     "date": "2026-03-09",
     "topic": "Implementing Cursor-Based Pagination with Composite Keys for Real-Time Feeds: Avoiding Offset Drift and Duplicate Entries in High-Write Scenarios"
+  },
+  {
+    "date": "2026-03-10",
+    "topic": "Implementing Hybrid Search with Reciprocal Rank Fusion for RAG Pipelines: Balancing BM25 Keyword Matching and Vector Similarity for Improved Retrieval Precision"
   }
 ]
