@@ -66,5 +66,9 @@
   {
     "date": "2026-03-11",
     "topic": "Implementing Request Coalescing for Hot Keys in Distributed Caches: Preventing Thundering Herd on Cache Misses with Single-Flight Patterns"
+  },
+  {
+    "date": "2026-03-12",
+    "topic": "Implementing Hierarchical Chunking Strategies for RAG: Balancing Parent-Child Document Retrieval with Context Window Optimization"
   }
 ]
