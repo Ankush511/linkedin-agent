@@ -70,5 +70,9 @@
   {
     "date": "2026-03-12",
     "topic": "Implementing Hierarchical Chunking Strategies for RAG: Balancing Parent-Child Document Retrieval with Context Window Optimization"
+  },
+  {
+    "date": "2026-03-13",
+    "topic": "Implementing Graceful Degradation for AI Agents Using AWS Bedrock: Fallback Chains and Model Routing When Primary LLM Endpoints Hit Rate Limits"
   }
 ]
