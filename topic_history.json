@@ -78,5 +78,9 @@
   {
     "date": "2026-03-15",
     "topic": "Implementing Tombstone Records with TTL-Based Garbage Collection in Distributed Databases: Handling Delete Propagation Without Breaking Eventual Consistency"
+  },
+  {
+    "date": "2026-03-16",
+    "topic": "Implementing Read-Your-Writes Consistency in Distributed Systems Using Session Tokens and Sticky Routing for User-Facing APIs"
   }
 ]
