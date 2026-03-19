@@ -82,5 +82,9 @@
   {
     "date": "2026-03-16",
     "topic": "Implementing Read-Your-Writes Consistency in Distributed Systems Using Session Tokens and Sticky Routing for User-Facing APIs"
+  },
+  {
+    "date": "2026-03-19",
+    "topic": "Implementing Sliding Window Rate Limiting with Redis Sorted Sets for Multi-Tenant APIs: Handling Burst Traffic Without Penalizing Legitimate Users"
   }
 ]
