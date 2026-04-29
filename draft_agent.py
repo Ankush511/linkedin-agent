@@ -3,7 +3,7 @@ import json
 import boto3
 import smtplib
 from email.mime.text import MIMEText
-from github import Github
+from github import Github, Auth
 from botocore.exceptions import ClientError
 
 HISTORY_FILE = "topic_history.json"
@@ -109,7 +109,8 @@ def generate_hashnode_article(topic, linkedin_summary):
     return invoke_claude(prompt, max_tokens=8000)
 
 def create_review_issue(topic, linkedin_content, hashnode_content):
-    g = Github(os.environ["GITHUB_TOKEN"])
+    auth = Auth.Token(os.environ["GITHUB_TOKEN"])
+    g = Github(auth=auth)
     repo = g.get_repo(os.environ["GITHUB_REPOSITORY"])
     
     body = f"""🤖 Draft generated for topic: {topic}
